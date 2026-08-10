@@ -1,0 +1,12 @@
+#root {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.burger-font {
+  font-family: "brandon-grotesque", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+}
