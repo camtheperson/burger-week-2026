@@ -9,6 +9,8 @@ export type LocationItem = {
   type: 'meat' | 'vegetarian' | 'vegan';
   types?: ('meat' | 'vegetarian' | 'vegan')[]; // Multiple types for JSON-based items
   glutenFree: boolean;
+  vegSubstitute?: boolean;
+  vegSurcharge?: string;
   image?: string;
   itemKey?: string;
   averageRating?: number;
@@ -78,6 +80,8 @@ export type JsonItem = {
   allowTakeout: boolean;
   purchaseLimits: boolean;
   allowDelivery: boolean;
+  vegSubstitute?: boolean | null;
+  vegSurcharge?: string;
   address: string;
   hours?: Array<{
     dayOfWeek: string;

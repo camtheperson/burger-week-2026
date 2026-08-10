@@ -16,6 +16,8 @@ export const migrateItemData = mutation({
       allowTakeout: v.boolean(),
       purchaseLimits: v.boolean(),
       allowDelivery: v.boolean(),
+      vegSubstitute: v.optional(v.boolean()),
+      vegSurcharge: v.optional(v.string()),
       address: v.string(),
       hours: v.optional(v.array(v.object({
         dayOfWeek: v.string(),
@@ -93,13 +95,15 @@ export const migrateItemData = mutation({
           altDescription: item.altDescription,
           type: itemType as "meat" | "vegetarian" | "vegan",
           glutenFree: item.glutenFree,
+          vegSubstitute: item.vegSubstitute,
+          vegSurcharge: item.vegSurcharge,
           url: item.url,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         });
       }
     }
-    
+
     return { success: true, processed: items.length };
   },
 });

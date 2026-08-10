@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react';
 import RatingDisplay from './RatingDisplay';
 import { getTypeTagStyles, type ItemType } from '../utils/itemTypeUtils';
+import { checkIfOpenNow } from '../utils/timeUtils';
 
 interface LocationCardProps {
   location: {
@@ -30,62 +31,8 @@ interface LocationCardProps {
   isSelected: boolean;
 }
 
-// Helper function to check if location is currently open
-function isLocationOpenNow(hours?: Array<{ dayOfWeek: string; date: string; hours: string; fullDate: string }>): boolean {
-  if (!hours || hours.length === 0) return false;
-  
-  const now = new Date();
-  const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-  
-  // Find today's hours
-  const todayHours = hours.find(h => h.fullDate === currentDate);
-  if (!todayHours) return false;
-  
-  // Parse hours string (e.g., "12–10 pm", "11 am–11 pm", "Closed")
-  const hoursStr = todayHours.hours;
-  if (hoursStr.toLowerCase().includes('closed')) return false;
-  
-  try {
-    // Extract start and end times
-    const timeRegex = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*[–-]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i;
-    const match = hoursStr.match(timeRegex);
-    if (!match) return false;
-    
-    const [, startHour, startMin = '0', startAmPm, endHour, endMin = '0', endAmPm] = match;
-    
-    // Convert to 24-hour format
-    let start24 = parseInt(startHour);
-    let end24 = parseInt(endHour);
-    
-    if (startAmPm.toLowerCase() === 'pm' && start24 !== 12) start24 += 12;
-    if (startAmPm.toLowerCase() === 'am' && start24 === 12) start24 = 0;
-    if (endAmPm.toLowerCase() === 'pm' && end24 !== 12) end24 += 12;
-    if (endAmPm.toLowerCase() === 'am' && end24 === 12) end24 = 0;
-    
-    const startTime = start24 * 60 + parseInt(startMin);
-    const endTime = end24 * 60 + parseInt(endMin);
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    // Handle overnight hours (e.g., 11 PM - 2 AM)
-    if (endTime < startTime) {
-      return currentTime >= startTime || currentTime <= endTime;
-    }
-    
-    return currentTime >= startTime && currentTime <= endTime;
-  } catch {
-    return false;
-  }
-}
-
 export default function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
-  const isOpenNow = isLocationOpenNow(location.hours);
-  // const [hoveredRating, setHoveredRating] = React.useState<number | null>(null);
-
-  // const handleRatingClick = (rating: number, e: React.MouseEvent) => {
-  //   e.stopPropagation(); // Prevent card click
-  //   // Rating functionality temporarily disabled
-  //   console.log('Rating clicked:', rating);
-  // };
+  const isOpenNow = checkIfOpenNow(location.hours ?? []);
 
   return (
     <div

@@ -1,21 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { useQuery } from 'convex/react';
+import { useQuery, useConvexAuth } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Filter, Search, X, Locate } from 'lucide-react';
 import LocationCard from '../components/LocationCard';
 import Filters from '../components/Filters';
-import RestaurantInfo from '../components/RestaurantInfo';
-import RestaurantHours from '../components/RestaurantHours';
-import ItemDisplay from '../components/ItemDisplay';
-import type { LocationWithItems, LocationItem, JsonLocationPin, JsonItem } from '../types';
+import LocationDetailsModal from '../components/LocationDetailsModal';
+import type { LocationWithItems, JsonItem } from '../types';
 import itemsData from '../../data/items.json';
-import { processJsonToLocations, filterJsonLocations, locationsToJsonPins } from '../utils/jsonDataProcessor';
+import { processJsonToLocations, filterJsonLocations } from '../utils/jsonDataProcessor';
 import 'leaflet/dist/leaflet.css';
-
-
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 // Custom marker icons
 const defaultMarkerIcon = new L.Icon({
@@ -34,17 +33,6 @@ const favoriteMarkerIcon = new L.Icon({
   iconAnchor: [20, 40],
   popupAnchor: [0, -40],
   shadowSize: [40, 40]
-});
-
-// Immediate (loading) marker - slightly smaller to indicate it's temporary
-const immediateMarkerIcon = new L.Icon({
-  iconUrl: '/burger-week-2026/marker.png',
-  iconRetinaUrl: '/burger-week-2026/marker.png',
-  iconSize: [35, 35], // Slightly smaller
-  iconAnchor: [17.5, 35],
-  popupAnchor: [0, -35],
-  shadowSize: [35, 35],
-  className: 'immediate-marker' // Add CSS class for potential styling
 });
 
 // User location marker - distinctive blue dot
@@ -177,20 +165,27 @@ export default function Map() {
     return [...new Set((itemsData as JsonItem[]).map(item => item.itemKey))];
   }, []);
 
+  // Anonymous visitors render purely from the static JSON data below -- these
+  // enrichment queries (ratings/favorites) only hit Convex once someone signs in.
+  const { isAuthenticated } = useConvexAuth();
+
   // Get enrichment data (ratings/favorites) for all items
-  const enrichmentData = useQuery(api.locations.getItemEnrichmentData, {
-    itemKeys
-  });
+  const enrichmentData = useQuery(
+    api.locations.getItemEnrichmentData,
+    isAuthenticated ? { itemKeys } : "skip"
+  );
 
   // Get favorited items for the current user (still need this for favorites filter)
-  const favoriteItems = useQuery(api.favorites.getFavorites, {});
+  const favoriteItems = useQuery(api.favorites.getFavorites, isAuthenticated ? {} : "skip");
 
   // Process JSON data into locations with enrichment data
   const locations: LocationWithItems[] = useMemo(() => {
-    if (!enrichmentData) return [];
-    
+    // Only block rendering while a signed-in user's enrichment data is loading;
+    // anonymous visitors render immediately with no ratings/favorites overlay.
+    if (isAuthenticated && !enrichmentData) return [];
+
     // Convert JSON items to location structure
-    const allLocations = processJsonToLocations(itemsData as JsonItem[], enrichmentData);
+    const allLocations = processJsonToLocations(itemsData as JsonItem[], enrichmentData ?? {});
     
     // Apply filters
     const favoriteItemIds = new Set(favoriteItems?.map(fav => fav.itemId) || []);
@@ -209,12 +204,7 @@ export default function Map() {
       type: selectedType ? selectedType as 'meat' | 'vegetarian' | 'vegan' : undefined,
       favoritesOnly: favoritesOnly || undefined,
     }, favoriteItemIds);
-  }, [enrichmentData, favoriteItems, searchTerm, selectedNeighborhood, glutenFree, allowMinors, allowTakeout, allowDelivery, isOpenNow, openAtEnabled, openAtDate, openAtTime, selectedType, favoritesOnly]);
-
-  // Convert locations to pins for map display
-  const finalPins: JsonLocationPin[] = useMemo(() => {
-    return locationsToJsonPins(locations);
-  }, [locations]);
+  }, [isAuthenticated, enrichmentData, favoriteItems, searchTerm, selectedNeighborhood, glutenFree, allowMinors, allowTakeout, allowDelivery, isOpenNow, openAtEnabled, openAtDate, openAtTime, selectedType, favoritesOnly]);
 
   // Clear favorites filter when user logs out (favoriteItems becomes null/empty)
   useEffect(() => {
@@ -252,26 +242,6 @@ export default function Map() {
       const location = locations.find(loc => loc && loc._id === locationId);
       if (location && (!currentSelected || currentSelected._id !== locationId)) {
         setSelectedLocation(location);
-      }
-      // Handle temp location upgrade: if current selection is a temp location,
-      // try to find the matching real location by restaurant name and coordinates
-      else if (currentSelected && currentSelected._id.startsWith('temp-') && !location) {
-        const matchingLocation = locations.find(loc => 
-          loc && 
-          loc.restaurantName === currentSelected.restaurantName &&
-          loc.latitude && loc.longitude &&
-          Math.abs(loc.latitude - currentSelected.latitude!) < 0.001 && 
-          Math.abs(loc.longitude - currentSelected.longitude!) < 0.001
-        );
-        
-        if (matchingLocation) {
-          // Upgrade temp location to real location
-          setSelectedLocation(matchingLocation);
-          // Update URL with real location ID
-          const newSearchParams = new URLSearchParams(searchParams);
-          newSearchParams.set('location', matchingLocation._id);
-          setSearchParams(newSearchParams);
-        }
       }
     } else if (!locationId) {
       // URL has no location ID - clear selection if we have one
@@ -394,76 +364,26 @@ export default function Map() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {/* 
-            Render immediate pins from JSON data for instant loading.
-            These show up immediately while detailed data loads from Convex.
-            They are slightly smaller and faded to indicate they're temporary.
-          */}
-          {finalPins.map((pin, index) => {
-            // Check if this pin has detailed data loaded from Convex
-            // Use a more precise coordinate match to avoid duplicate pins
-            const detailedLocation = filteredLocations.find(loc => 
-              loc && 
-              Math.abs(loc.latitude! - pin.latitude) < 0.0001 && 
-              Math.abs(loc.longitude! - pin.longitude) < 0.0001 &&
-              loc.restaurantName === pin.restaurantName
-            );
-            
-            // Only render immediate pin if detailed version isn't available yet
-            if (!detailedLocation) {
-              return (
-                <Marker
-                  key={`immediate-${index}`}
-                  position={[pin.latitude, pin.longitude]}
-                  icon={immediateMarkerIcon}
-                  eventHandlers={{
-                    click: () => {
-                      // Create a temporary location object for display
-                      const tempLocation = {
-                        _id: `temp-${index}`,
-                        restaurantName: pin.restaurantName,
-                        neighborhood: pin.neighborhood,
-                        address: pin.address,
-                        latitude: pin.latitude,
-                        longitude: pin.longitude,
-                        items: [],
-                        hours: [],
-                        _creationTime: Date.now(),
-                        allowMinors: false,
-                        allowTakeout: false,
-                        allowDelivery: false,
-                        purchaseLimits: false,
-                        phone: null,
-                        website: null,
-                        updatedAt: Date.now()
-                      } as unknown as LocationWithItems;
-                      handleLocationClick(tempLocation);
-                    },
-                  }}
-                />
-              );
-            }
-            return null;
-          })}
-          
-          {/* Render detailed pins from Convex data (these will overlay the immediate pins) */}
-          {filteredLocations.map((location) => location && (
-            <Marker
-              key={location._id}
-              position={[location.latitude!, location.longitude!]}
-              icon={
-                selectedLocation?._id === location._id 
-                  ? favoriteMarkerIcon 
-                  : locationHasFavorites(location)
+          {/* Cluster pins so dense neighborhoods don't overlap at city zoom */}
+          <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>
+            {filteredLocations.map((location) => location && (
+              <Marker
+                key={location._id}
+                position={[location.latitude!, location.longitude!]}
+                icon={
+                  selectedLocation?._id === location._id
                     ? favoriteMarkerIcon
-                    : defaultMarkerIcon
-              }
-              eventHandlers={{
-                click: () => handleLocationClick(location),
-              }}
-            />
-          ))}
-          
+                    : locationHasFavorites(location)
+                      ? favoriteMarkerIcon
+                      : defaultMarkerIcon
+                }
+                eventHandlers={{
+                  click: () => handleLocationClick(location),
+                }}
+              />
+            ))}
+          </MarkerClusterGroup>
+
           {/* User Location Marker */}
           {userLocation && (
             <Marker
@@ -488,103 +408,9 @@ export default function Map() {
           }`} />
         </button>
 
-        {/* Location Details Overlay */}
-        {selectedLocation && (
-          <>
-            {/* Mobile: Full screen overlay */}
-            <div className="md:hidden fixed inset-0 bg-white z-20 flex flex-col mobile-footer-padding" style={{ top: '4rem' }}>
-              {/* Mobile Header */}
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
-                <h3 className="text-xl font-semibold text-gray-900 truncate">
-                  {selectedLocation.restaurantName}
-                </h3>
-                <button
-                  onClick={handleLocationClose}
-                  className="text-gray-400 hover:text-gray-600 p-2 flex-shrink-0"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              {/* Mobile Content - Scrollable */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Restaurant Info */}
-                <RestaurantInfo location={selectedLocation} />
-                
-                {/* Show loading state for temporary locations */}
-                {selectedLocation._id.startsWith('temp-') && (
-                  <div className="p-8 text-center text-gray-500">
-                    <p>Loading detailed information...</p>
-                  </div>
-                )}
-                
-                {/* Items with large images on mobile */}
-                {selectedLocation.items && selectedLocation.items.length > 0 && (
-                  <div className="space-y-0">
-                    {selectedLocation.items.map((item: LocationItem) => (
-                      <ItemDisplay 
-                        key={item._id} 
-                        item={item} 
-                        imageSize="large"
-                        showFullDetails={true}
-                      />
-                    ))}
-                  </div>
-                )}
+        {/* Location Details Overlay - shared with List.tsx */}
+        <LocationDetailsModal selectedLocation={selectedLocation} onClose={handleLocationClose} />
 
-                {/* Hours */}
-                <RestaurantHours hours={selectedLocation.hours} />
-              </div>
-            </div>
-            
-            {/* Desktop: Larger overlay with mobile-like structure */}
-            <div className="hidden md:block absolute inset-4 bg-white rounded-lg shadow-lg border border-gray-200 z-10 flex flex-col">
-              {/* Desktop Header */}
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white rounded-t-lg">
-                <h3 className="text-xl font-semibold text-gray-900 truncate">
-                  {selectedLocation.restaurantName}
-                </h3>
-                <button
-                  onClick={handleLocationClose}
-                  className="text-gray-400 hover:text-gray-600 p-2 flex-shrink-0"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              {/* Desktop Content - Scrollable */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Restaurant Info */}
-                <RestaurantInfo location={selectedLocation} />
-                
-                {/* Show loading state for temporary locations */}
-                {selectedLocation._id.startsWith('temp-') && (
-                  <div className="p-8 text-center text-gray-500">
-                    <p>Loading detailed information...</p>
-                  </div>
-                )}
-                
-                {/* Items with medium-sized images on desktop */}
-                {selectedLocation.items && selectedLocation.items.length > 0 && (
-                  <div className="space-y-0">
-                    {selectedLocation.items.map((item: LocationItem) => (
-                      <ItemDisplay 
-                        key={item._id} 
-                        item={item} 
-                        imageSize="medium"
-                        showFullDetails={true}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Hours */}
-                <RestaurantHours hours={selectedLocation.hours} />
-              </div>
-            </div>
-          </>
-        )}
-        
         {/* Mobile Filters Modal */}
         {showMobileFilters && (
           <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}>

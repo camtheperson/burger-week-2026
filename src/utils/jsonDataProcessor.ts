@@ -11,11 +11,14 @@ export function processJsonToLocations(
   
   jsonItems.forEach((item) => {
     if (item.latitude && item.longitude && item.restaurantName) {
-      const key = item.restaurantName;
-      
+      // Group by name + address, not just name, so chains with multiple
+      // Burger Week locations (e.g. the same item at two different addresses)
+      // get a separate pin per location instead of collapsing into one.
+      const key = `${item.restaurantName}|${item.address}`;
+
       if (!locationMap[key]) {
         locationMap[key] = {
-          _id: `json-${key.toLowerCase().replace(/\s+/g, '-')}` as Id<'locations'>, // Temporary ID for JSON data
+          _id: `json-${key.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` as Id<'locations'>, // Temporary ID for JSON data
           restaurantName: item.restaurantName,
           address: item.address,
           neighborhood: item.neighborhood,
@@ -60,6 +63,8 @@ export function processJsonToLocations(
         type: primaryType, // Primary type for compatibility
         types: types.length > 1 ? types : undefined, // All types if multiple
         glutenFree: item.glutenFree,
+        vegSubstitute: item.vegSubstitute ?? undefined,
+        vegSurcharge: item.vegSurcharge,
         image: item.image,
         itemKey: item.itemKey,
         averageRating: enrichment?.averageRating,

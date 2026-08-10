@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useQuery, useConvexAuth } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Search, Filter } from 'lucide-react';
 import LocationCard from '../components/LocationCard';
@@ -43,19 +43,26 @@ export default function List() {
     return [...new Set((itemsData as JsonItem[]).map(item => item.itemKey))];
   }, []);
 
-  // Get enrichment data (ratings/favorites) for all items
-  const enrichmentData = useQuery(api.locations.getItemEnrichmentData, {
-    itemKeys
-  });
+  // Anonymous visitors render purely from the static JSON data below -- these
+  // enrichment queries (ratings/favorites) only hit Convex once someone signs in.
+  const { isAuthenticated } = useConvexAuth();
 
-  const favoriteItems = useQuery(api.favorites.getFavorites, {});
+  // Get enrichment data (ratings/favorites) for all items
+  const enrichmentData = useQuery(
+    api.locations.getItemEnrichmentData,
+    isAuthenticated ? { itemKeys } : "skip"
+  );
+
+  const favoriteItems = useQuery(api.favorites.getFavorites, isAuthenticated ? {} : "skip");
 
   // Process JSON data into locations with enrichment data
   const locations = useMemo(() => {
-    if (!enrichmentData) return [];
-    
+    // Only block rendering while a signed-in user's enrichment data is loading;
+    // anonymous visitors render immediately with no ratings/favorites overlay.
+    if (isAuthenticated && !enrichmentData) return [];
+
     // Convert JSON items to location structure
-    const allLocations = processJsonToLocations(itemsData as JsonItem[], enrichmentData);
+    const allLocations = processJsonToLocations(itemsData as JsonItem[], enrichmentData ?? {});
     
     // Apply filters
     const favoriteItemIds = new Set(favoriteItems?.map(fav => fav.itemId) || []);
@@ -74,7 +81,7 @@ export default function List() {
       type: selectedType ? selectedType as 'meat' | 'vegetarian' | 'vegan' : undefined,
       favoritesOnly: favoritesOnly || undefined,
     }, favoriteItemIds);
-  }, [enrichmentData, favoriteItems, searchTerm, selectedNeighborhood, glutenFree, allowMinors, allowTakeout, allowDelivery, isOpenNow, openAtEnabled, openAtDate, openAtTime, selectedType, favoritesOnly]);
+  }, [isAuthenticated, enrichmentData, favoriteItems, searchTerm, selectedNeighborhood, glutenFree, allowMinors, allowTakeout, allowDelivery, isOpenNow, openAtEnabled, openAtDate, openAtTime, selectedType, favoritesOnly]);
 
   const handleLocationClick = (location: LocationWithItems) => {
     setSelectedLocation(location);

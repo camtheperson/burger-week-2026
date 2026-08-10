@@ -93,6 +93,11 @@ export default function ItemDisplay({
               Gluten Free
             </span>
           )}
+          {item.vegSubstitute && (
+            <span className="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+              Veg Substitute Available
+            </span>
+          )}
           {/* Show all type tags */}
           {item.types && item.types.length > 1 ? (
             // Multiple types - show all as separate tags
@@ -108,6 +113,12 @@ export default function ItemDisplay({
             </span>
           )}
         </div>
+
+        {item.vegSubstitute && item.vegSurcharge && (
+          <p className="text-sm text-gray-500 mt-2">
+            Vegetarian/vegan surcharge: {item.vegSurcharge}
+          </p>
+        )}
       </div>
     </div>
   );

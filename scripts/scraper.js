@@ -117,32 +117,37 @@ class FoodWeekScraper {
       let allowTakeout = null;
       let purchaseLimits = null;
       let allowDelivery = null;
-      
-      // Find the element containing all the food details
+      let vegSubstitute = null;
+      let vegSurcharge = '';
+
+      // Find the element containing all the food details. Label casing/wording has
+      // shifted between event years (e.g. "What's on them..." -> "What's On It..."),
+      // so match case-insensitively rather than on an exact string.
       let foodDetailsText = '';
       $('*').each((i, el) => {
         const text = $(el).text();
-        if (text.includes("What's on them...") && text.includes('What they say...')) {
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes("what's on") && lowerText.includes('they say')) {
           foodDetailsText = text;
           return false; // break
         }
       });
-      
+
       if (foodDetailsText) {
         const lines = foodDetailsText.split('\n').map(l => l.trim()).filter(l => l);
-        
-        // Extract "What's on them..." (description)
-        const whatsOnThemIndex = lines.findIndex(l => l.includes("What's on them..."));
-        if (whatsOnThemIndex !== -1 && whatsOnThemIndex + 1 < lines.length) {
-          description = lines[whatsOnThemIndex + 1];
+
+        // Extract "What's on it/them..." (description)
+        const whatsOnItIndex = lines.findIndex(l => l.toLowerCase().includes("what's on"));
+        if (whatsOnItIndex !== -1 && whatsOnItIndex + 1 < lines.length) {
+          description = lines[whatsOnItIndex + 1];
         }
-        
+
         // Extract "What they say..." (altDescription)
-        const whatTheySayIndex = lines.findIndex(l => l.includes("What they say..."));
+        const whatTheySayIndex = lines.findIndex(l => l.toLowerCase().includes('they say'));
         if (whatTheySayIndex !== -1 && whatTheySayIndex + 1 < lines.length) {
           altDescription = lines[whatTheySayIndex + 1];
         }
-        
+
         // Extract "Meat or Vegetarian?"
         const meatVegIndex = lines.findIndex(l => l.includes("Meat or Vegetarian?"));
         if (meatVegIndex !== -1 && meatVegIndex + 1 < lines.length) {
@@ -182,6 +187,19 @@ class FoodWeekScraper {
         if (allowDeliveryIndex !== -1 && allowDeliveryIndex + 1 < lines.length) {
           const allowDeliveryValue = lines[allowDeliveryIndex + 1].toLowerCase();
           allowDelivery = allowDeliveryValue === 'yes';
+        }
+
+        // Extract "Vegetarian/Vegan substitutes" (new for Burger Week)
+        const vegSubstituteIndex = lines.findIndex(l => l.toLowerCase().includes('vegetarian/vegan substitute'));
+        if (vegSubstituteIndex !== -1 && vegSubstituteIndex + 1 < lines.length) {
+          const vegSubstituteValue = lines[vegSubstituteIndex + 1];
+          vegSubstitute = vegSubstituteValue.toLowerCase().startsWith('yes');
+        }
+
+        // Extract "Vegetarian/Vegan surcharge" (new for Burger Week)
+        const vegSurchargeIndex = lines.findIndex(l => l.toLowerCase().includes('vegetarian/vegan surcharge'));
+        if (vegSurchargeIndex !== -1 && vegSurchargeIndex + 1 < lines.length) {
+          vegSurcharge = lines[vegSurchargeIndex + 1];
         }
       }
       
@@ -313,6 +331,8 @@ class FoodWeekScraper {
         allowTakeout,
         purchaseLimits,
         allowDelivery,
+        vegSubstitute,
+        vegSurcharge: vegSurcharge.substring(0, 200).trim(),
         address,
         hours
       };

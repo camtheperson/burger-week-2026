@@ -15,12 +15,11 @@ class ImageScraper {
     this.concurrency = 3; // Number of parallel image downloads
     this.delay = 1000; // Delay between requests (ms)
     
-    // Initialize Convex client
+    // Initialize Convex client. No Convex project exists yet for a brand-new
+    // event, so fall back to reading/writing data/items.json directly and
+    // skip any Convex mutation calls until VITE_CONVEX_URL is set.
     const convexUrl = process.env.VITE_CONVEX_URL;
-    if (!convexUrl) {
-      throw new Error("VITE_CONVEX_URL environment variable is required");
-    }
-    this.convexClient = new ConvexHttpClient(convexUrl);
+    this.convexClient = convexUrl ? new ConvexHttpClient(convexUrl) : null;
   }
 
   async init() {
@@ -31,6 +30,12 @@ class ImageScraper {
   }
 
   async loadItemData() {
+    if (!this.convexClient) {
+      console.log('No VITE_CONVEX_URL set - loading items directly from data/items.json...');
+      const data = fs.readFileSync(this.dataPath, 'utf8');
+      return JSON.parse(data);
+    }
+
     console.log('Loading item data from Convex...');
     try {
       const locations = await this.convexClient.query("locations:getLocationsForScraping", {});
@@ -89,6 +94,10 @@ class ImageScraper {
   }
 
   async updateItemImage(itemId, imageUrl, imagePath) {
+    if (!this.convexClient) {
+      console.log(`No Convex deployment yet - image path stored in data/items.json only: ${imagePath}`);
+      return;
+    }
     console.log(`Updating item ${itemId} with image: ${imagePath}`);
     try {
       await this.convexClient.mutation("locations:updateItemImage", {
@@ -283,19 +292,28 @@ class ImageScraper {
     await this.init();
     
     const locations = await this.loadItemData();
-    console.log(`Found ${locations.length} locations to process`);
 
-    // Flatten all items from all locations
-    const allItems = [];
-    for (const location of locations) {
-      if (location.items && location.items.length > 0) {
-        for (const item of location.items) {
-          allItems.push({
-            ...item,
-            locationName: location.restaurantName
-          });
+    // The Convex query returns locations with a nested `items` array; the
+    // data/items.json fallback is already a flat array of one row per item.
+    let allItems;
+    if (this.convexClient) {
+      console.log(`Found ${locations.length} locations to process`);
+      allItems = [];
+      for (const location of locations) {
+        if (location.items && location.items.length > 0) {
+          for (const item of location.items) {
+            allItems.push({
+              ...item,
+              locationName: location.restaurantName
+            });
+          }
         }
       }
+    } else {
+      allItems = locations.map(item => ({
+        ...item,
+        locationName: item.restaurantName
+      }));
     }
 
     console.log(`Found ${allItems.length} total items to process`);

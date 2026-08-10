@@ -39,6 +39,8 @@ export default defineSchema({
     altDescription: v.optional(v.string()),
     type: v.union(v.literal("meat"), v.literal("vegetarian"), v.literal("vegan")),
     glutenFree: v.boolean(),
+    vegSubstitute: v.optional(v.boolean()),
+    vegSurcharge: v.optional(v.string()),
     price: v.optional(v.number()),
     url: v.optional(v.string()),
     image: v.optional(v.string()),
