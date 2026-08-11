@@ -24,15 +24,12 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
           {/* Logo */}
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/burger-week-2026/burger-week-horizontal.png"
+              src="/burger-week-2026/burger-week-icon.png"
               alt="Burger Week 2026"
-              className="h-16 w-auto"
+              className="h-24 w-auto"
             />
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Welcome to Burger Week 2026!
-          </h2>
           <p className="text-gray-600 text-center">
             Your ultimate guide to Portland's best burgers
           </p>

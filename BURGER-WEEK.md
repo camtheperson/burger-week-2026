@@ -7,13 +7,16 @@ re-deriving it from git log.
 
 ## Current state
 
-Two commits exist:
-1. Initial copy + wing→burger rename (branding, base paths, identifiers, copy).
-2. Data scrape/fix pass + map improvements (see below).
-
-**Nothing has been pushed to Convex.** There is no Convex project, no Clerk
-app, and no GitHub repo for this project yet — all still need to be created
-by hand (see "Next steps").
+**As of 2026-08-11 the site is live**: Convex project, Clerk app (now with a
+verified Production instance at `clerk.camtheperson.com`, not just the dev
+instance), and GitHub repo (`github.com/camtheperson/burger-week-2026`,
+public) all exist and are wired together. Both the dev (`cool-cow-555`) and
+prod (`disciplined-chinchilla-555`) Convex deployments have the full 124-item
+dataset migrated, including images and itemKeys. See "Next steps" for the
+full history of what was done in what order, and "Bugs found and fixed" for
+everything that had to be corrected along the way — there were several, and
+they're worth reading before assuming any given piece of this pipeline works
+correctly by default.
 
 ## Data
 
@@ -89,6 +92,33 @@ by hand (see "Next steps").
   `migrations:clearAllLocationData`, a one-off utility for exactly this —
   safe to reuse for future re-migrations since `migrateItemData` always
   inserts rather than upserting).
+- **Favorites and ratings were completely broken on the live site** —
+  reported 2026-08-11. Root cause: `npm run migrate`/`npm run scrape-images`
+  had only ever been run against the **dev** Convex deployment
+  (`cool-cow-555`); the live site's `VITE_CONVEX_URL` secret points at the
+  **prod** deployment (`disciplined-chinchilla-555`), which had the schema
+  (pushed automatically by the GitHub Actions deploy) but zero actual rows —
+  `locations:count --prod` was 0. With no real `locationItems` row to match,
+  `getItemEnrichmentData` found nothing, so the frontend fell back to a fake
+  `temp-${itemKey}` id, and `setRating`/`toggleFavorite` failed since that's
+  not a valid `Id<'locationItems'>`. Fixed by re-running both scripts with
+  `VITE_CONVEX_URL` overridden to the prod URL (shell env takes precedence
+  over `.env.local`'s dotenv-loaded dev value) — confirmed after via
+  `locations:count --prod` → 124 and all 124 itemKeys matched through
+  `getItemEnrichmentData`. **Any future re-migration needs to target both
+  deployments explicitly** — there's no `--prod` flag on these scripts, only
+  the env-var-override trick.
+- **`WelcomeModal.tsx` displayed the literal old Wingman logo** (a wing-shaped
+  map pin + "WINGMAN" wordmark, `public/burger-week-horizontal.png`) —
+  reported 2026-08-11, live on the public site. That file was never actually
+  replaced with Burger Week branding despite being renamed alongside the
+  actual new logo files. Swapped to `burger-week-icon.png` (the real
+  Portland-skyline-and-burger logo) and dropped the redundant "Welcome to
+  Burger Week 2026!" heading since the logo now carries that. Note:
+  `public/burger-week.png` is the same old Wingman logo and is still sitting
+  in `public/` unused — not referenced anywhere in `src/`, so it's dead
+  weight rather than a live bug, but worth deleting during the branding pass
+  (step 6).
 
 ## Map improvements made
 
@@ -156,7 +186,17 @@ by hand (see "Next steps").
    server-side, separately from the Vite-side `.env.local` value. `npx
    convex dev --once` now completes with no auth-config error. (Google
    OAuth client `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` still optional, not
-   set up — only needed for Google sign-in.)
+   set up — only needed for Google sign-in.) **Update 2026-08-11**: also set
+   up the Clerk app's **Production** instance (separate users/JWT
+   templates/keys from Development) so the live site stops showing Clerk's
+   "development mode" banner. Domain `clerk.camtheperson.com` verified via
+   DNS (CNAME already existed from a prior project), new "convex" JWT
+   template created under Production, issuer
+   `https://clerk.camtheperson.com`. `VITE_CLERK_PUBLISHABLE_KEY` GitHub
+   secret updated to the `pk_live_...` key and `CLERK_JWT_ISSUER_DOMAIN`
+   updated on the **prod** Convex deployment (`npx convex env set --prod`).
+   `.env.local` intentionally left on the dev instance's keys for local
+   development.
 3. ~~**Re-review `data/items.json`**~~ — done 2026-08-11. All 4 previously
    address-less restaurants (`2NW5`, `Arch Bridge Taphouse`, one `Ate-Oh-Ate`
    location, `Bar Bar`) now have real, geocoded addresses; verified 124/124
@@ -171,12 +211,22 @@ by hand (see "Next steps").
    confirmed applied (spot-checked via `getLocationsForScraping`, 0 items
    missing an image). See "Bugs found and fixed" for one latent
    filename-collision issue found in that script (not blocking).
-5. **Create a GitHub repo**, add `CONVEX_DEPLOY_KEY`/`VITE_CONVEX_URL`/
-   `VITE_CLERK_PUBLISHABLE_KEY` as repo secrets, push — `.github/workflows/`
-   is already set up for GitHub Pages + Convex deploy on push to `main`
-   (reused as-is from wingman).
-6. Commission or generate real Burger Week branding to replace the
-   `burger-week*.png/jpg` placeholders in `public/`.
+5. ~~**Create a GitHub repo**~~ — done 2026-08-11. Public repo at
+   `github.com/camtheperson/burger-week-2026`. All 3 secrets
+   (`CONVEX_DEPLOY_KEY` from the Convex dashboard's prod deploy keys,
+   `VITE_CONVEX_URL` = the prod deployment URL not the dev one,
+   `VITE_CLERK_PUBLISHABLE_KEY`) added and confirmed via a green
+   `Deploy to Production` run. Two things needed fixing beyond what wingman's
+   workflow assumed: (1) `CLERK_JWT_ISSUER_DOMAIN` also had to be set on the
+   **prod** Convex deployment (`npx convex env set --prod ...`), not just
+   dev; (2) GitHub Pages wasn't enabled for the new repo (`Setup Pages` step
+   failed) — enabled via `gh api -X POST .../pages -f build_type=workflow`.
+   Site is live and returns 200 at
+   `https://camtheperson.github.io/burger-week-2026/` (redirects to this
+   GitHub account's custom Pages domain).
+6. **Not done.** Commission or generate real Burger Week branding to
+   replace the `burger-week*.png/jpg` placeholders in `public/` — the site
+   is now publicly live with wingman's old pixels still in place.
 
 ## Verifying locally right now (no Convex/Clerk needed)
 
