@@ -197,6 +197,28 @@ correctly by default.
    updated on the **prod** Convex deployment (`npx convex env set --prod`).
    `.env.local` intentionally left on the dev instance's keys for local
    development.
+
+   **Update 2026-08-11, later same day — rolled back.** After deploying the
+   `pk_live_...` key, sign-in broke completely (not just the dev-mode
+   banner): browser console showed `ClerkRuntimeError: Failed to load Clerk,
+   failed to load script` for
+   `https://clerk.camtheperson.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js`,
+   with CORS/403 errors. Checked DNS directly (`dig`) — all 5 records Clerk
+   needs (`clerk`, `accounts`, `clkmail`, `clk._domainkey`, `clk2._domainkey`)
+   resolve correctly and reference this specific Clerk instance (unique id
+   `784us9jjvds5` in the mail/DKIM targets), so **DNS itself is not
+   misconfigured**. A direct `curl` to the failing script URL returned
+   `HTTP 524` (Cloudflare timeout reaching Clerk's origin for that domain) —
+   consistent with the custom domain still finishing activation on Clerk's
+   side after DNS verification, which can lag DNS propagation by an unknown
+   amount of time. Rolled `VITE_CLERK_PUBLISHABLE_KEY` (GitHub secret) and
+   `CLERK_JWT_ISSUER_DOMAIN` (prod Convex env) back to the dev instance's
+   values and redeployed — confirmed via the live bundle that `pk_test_...`
+   is back and sign-in works again (with the dev-mode banner back too, as a
+   known tradeoff). **To retry**: check the Clerk dashboard's Domains page
+   for the Production instance and confirm it shows fully verified/active
+   (not just DNS-detected) before flipping the secret/env var back to the
+   `pk_live_...`/`clerk.camtheperson.com` values and redeploying.
 3. ~~**Re-review `data/items.json`**~~ — done 2026-08-11. All 4 previously
    address-less restaurants (`2NW5`, `Arch Bridge Taphouse`, one `Ate-Oh-Ate`
    location, `Bar Bar`) now have real, geocoded addresses; verified 124/124
