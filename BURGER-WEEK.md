@@ -219,6 +219,19 @@ correctly by default.
    for the Production instance and confirm it shows fully verified/active
    (not just DNS-detected) before flipping the secret/env var back to the
    `pk_live_...`/`clerk.camtheperson.com` values and redeploying.
+
+   **Update 2026-08-11, later still — re-verified and cut over
+   successfully.** Before retrying, checked
+   `curl -sL -o /dev/null -w '%{http_code}' https://clerk.camtheperson.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js`
+   directly — got a healthy `307 → 200` with `access-control-allow-origin: *`,
+   versus the earlier `524` timeout. Flipped `VITE_CLERK_PUBLISHABLE_KEY`
+   (GitHub secret) and `CLERK_JWT_ISSUER_DOMAIN` (prod Convex env) back to
+   the `pk_live_...`/`clerk.camtheperson.com` production values and
+   redeployed; confirmed via the live bundle that `pk_live_...` is in place
+   and the Clerk script now serves with correct CORS for
+   `https://camtheperson.com`. Clerk production is live as of this
+   deploy — if the dev-mode banner or sign-in errors resurface, the
+   dev-instance fallback values are documented in the rollback note above.
 3. ~~**Re-review `data/items.json`**~~ — done 2026-08-11. All 4 previously
    address-less restaurants (`2NW5`, `Arch Bridge Taphouse`, one `Ate-Oh-Ate`
    location, `Bar Bar`) now have real, geocoded addresses; verified 124/124
