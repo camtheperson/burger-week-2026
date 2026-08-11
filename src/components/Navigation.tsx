@@ -28,7 +28,7 @@ export default function Navigation() {
             <img
               src="./burger-week-icon.png"
               alt="Burger Week 2026"
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
             <span className="brand-font font-bold ml-2 text-3xl text-burger-red">BURGER WEEK</span>
           </Link>

@@ -46,12 +46,15 @@ class FoodWeekScraper {
         if (restaurantLink.length > 0) {
           const restaurantText = restaurantLink.text().trim();
           
-          // Extract restaurant name and location
+          // Extract restaurant name and location. The neighborhood suffix is
+          // sometimes missing on the source page, so fall back to the raw
+          // text as the name with an empty neighborhood rather than
+          // dropping the restaurant entirely.
           const match = restaurantText.match(/^(.+?)\s*\((.+?)\)$/);
-          if (match) {
-            const restaurantName = match[1].trim();
-            const neighborhood = match[2].trim();
-            
+          {
+            const restaurantName = match ? match[1].trim() : restaurantText;
+            const neighborhood = match ? match[2].trim() : '';
+
             // Find item name and URL in h3
             const itemNameElement = $element.find('h3 a');
             const itemName = itemNameElement.text().trim();
@@ -154,11 +157,13 @@ class FoodWeekScraper {
           type = lines[meatVegIndex + 1].toLowerCase();
         }
         
-        // Extract "Gluten Free?" 
+        // Extract "Gluten Free?" - answers can be "Yes", "No", "Available (same
+        // price)", or "Available (with surcharge)". Any answer other than "No"
+        // means a gluten-free option exists, so only exclude on an explicit "no".
         const glutenFreeIndex = lines.findIndex(l => l.includes("Gluten Free?"));
         if (glutenFreeIndex !== -1 && glutenFreeIndex + 1 < lines.length) {
           const glutenFreeValue = lines[glutenFreeIndex + 1].toLowerCase();
-          glutenFree = glutenFreeValue === 'yes';
+          glutenFree = glutenFreeValue !== 'no' && glutenFreeValue !== '';
         }
         
         // Extract "Allow Minors?"

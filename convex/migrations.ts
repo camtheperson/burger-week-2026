@@ -33,11 +33,15 @@ export const migrateItemData = mutation({
   },
   handler: async (ctx, { items }) => {
     const locationMap = new Map();
-    
+
     for (const item of items) {
-      // Check if location already exists
-      let location = locationMap.get(item.restaurantName);
-      
+      // Group by restaurantName + address, not restaurantName alone -- a chain
+      // running the same item at multiple addresses (e.g. Ate-Oh-Ate) must get
+      // a separate location per address. Mirrors processJsonToLocations on the
+      // client side.
+      const locationKey = `${item.restaurantName}|${item.address}`;
+      let location = locationMap.get(locationKey);
+
       if (!location) {
         // Create new location
         const locationId = await ctx.db.insert("locations", {
@@ -55,9 +59,9 @@ export const migrateItemData = mutation({
           createdAt: Date.now(),
           updatedAt: Date.now(),
         });
-        
+
         location = { _id: locationId };
-        locationMap.set(item.restaurantName, location);
+        locationMap.set(locationKey, location);
         
         // Add hours for this location
         if (item.hours && item.hours.length > 0) {
@@ -272,28 +276,34 @@ export const populateItemKeys = mutation({
     let notFoundCount = 0;
     
     for (const item of items) {
-      // Find the location by restaurant name
+      // Find the location by restaurant name + address, not name alone --
+      // chains like Ate-Oh-Ate run the same item name at multiple addresses.
       const location = await ctx.db
         .query("locations")
-        .filter((q) => q.eq(q.field("restaurantName"), item.restaurantName))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("restaurantName"), item.restaurantName),
+            q.eq(q.field("address"), item.address)
+          )
+        )
         .first();
-      
+
       if (!location) {
         notFoundCount++;
         continue;
       }
-      
+
       // Find the locationItem by locationId and itemName
       const locationItem = await ctx.db
         .query("locationItems")
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.eq(q.field("locationId"), location._id),
             q.eq(q.field("itemName"), item.itemName)
           )
         )
         .first();
-      
+
       if (locationItem) {
         await ctx.db.patch(locationItem._id, {
           itemKey: item.itemKey,
@@ -304,12 +314,36 @@ export const populateItemKeys = mutation({
         notFoundCount++;
       }
     }
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       updated: updatedCount,
       notFound: notFoundCount,
       total: items.length
+    };
+  },
+});
+// One-off utility to wipe location data before re-running migrateItemData
+// (which always inserts, never upserts) after a schema/grouping fix. Does not
+// touch favorites/itemRatings -- check those aren't populated with real user
+// data before using this.
+export const clearAllLocationData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const [hours, items, locations] = await Promise.all([
+      ctx.db.query("locationHours").collect(),
+      ctx.db.query("locationItems").collect(),
+      ctx.db.query("locations").collect(),
+    ]);
+
+    for (const doc of hours) await ctx.db.delete(doc._id);
+    for (const doc of items) await ctx.db.delete(doc._id);
+    for (const doc of locations) await ctx.db.delete(doc._id);
+
+    return {
+      deletedHours: hours.length,
+      deletedItems: items.length,
+      deletedLocations: locations.length,
     };
   },
 });
