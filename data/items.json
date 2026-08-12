@@ -3546,7 +3546,7 @@
     "allowDelivery": false,
     "vegSubstitute": false,
     "vegSurcharge": "$3",
-    "address": "2021 SW M, or 97205",
+    "address": "2021 SW Morrison St, Portland, OR 97205",
     "hours": [
       {
         "dayOfWeek": "Mon",
@@ -3591,9 +3591,9 @@
         "fullDate": "2026-08-16"
       }
     ],
-    "latitude": 45.5205043,
-    "longitude": -122.707349,
-    "geocoded_address": "Portland, OR 97205, USA",
+    "latitude": 45.5229766,
+    "longitude": -122.692881,
+    "geocoded_address": "2021 SW Morrison St, Portland, OR 97205, USA",
     "geocoding_method": "google_api",
     "itemKey": "974cd5835d03",
     "image": "/burger-week-2026/images/kingston_bar_and_grill_fiesta_kingston_burger.jpg",
@@ -5006,7 +5006,7 @@
     "allowDelivery": false,
     "vegSubstitute": false,
     "vegSurcharge": "",
-    "address": "3746 SE Hawth, or 97214",
+    "address": "3746 SE Hawthorne Blvd, Portland, OR 97214",
     "hours": [
       {
         "dayOfWeek": "Mon",
@@ -5051,10 +5051,10 @@
         "fullDate": "2026-08-16"
       }
     ],
-    "latitude": 45.5113506,
-    "longitude": -122.6456739,
-    "geocoded_address": "Portland, OR 97214, USA",
-    "geocoding_method": "google_api",
+    "latitude": 45.5118806,
+    "longitude": -122.6249444,
+    "geocoded_address": "3746 SE Hawthorne Blvd, Portland, OR 97214, USA",
+    "geocoding_method": "manual_fix",
     "itemKey": "106b936923da",
     "image": "/burger-week-2026/images/nick_s_famous_coney_island_hamburguesa_with_crunch.jpg",
     "imageUrl": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTc4NDE1MDI3MjY5MTUzLU5pY2tzLUNvbmV5LUlzbGFuZC5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImluc2lkZSIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA5NjAsICJoZWlnaHQiOiA2MDAsICJ3aXRob3V0RW5sYXJnZW1lbnQiOiBmYWxzZX0sICJyb3RhdGUiOiBudWxsfX0="
@@ -5810,7 +5810,7 @@
     "allowDelivery": false,
     "vegSubstitute": false,
     "vegSurcharge": "NA",
-    "address": "3900 SW , Or 97006",
+    "address": "3900 SW Orbit St, Beaverton, OR 97006",
     "hours": [
       {
         "dayOfWeek": "Mon",
@@ -5855,9 +5855,9 @@
         "fullDate": "2026-08-16"
       }
     ],
-    "latitude": 45.5179745,
-    "longitude": -122.8541997,
-    "geocoded_address": "Beaverton, OR 97006, USA",
+    "latitude": 45.491478,
+    "longitude": -122.8273335,
+    "geocoded_address": "3900 SW Orbit St, Beaverton, OR 97005, USA",
     "geocoding_method": "google_api",
     "itemKey": "ed00d78f2ff5",
     "image": "/burger-week-2026/images/prime_tap_house_west_end_district_the_bangkok_smas.jpg",
@@ -6682,7 +6682,7 @@
     "allowDelivery": false,
     "vegSubstitute": false,
     "vegSurcharge": "",
-    "address": "4343 SE Hawth, or 97215",
+    "address": "4343 SE Hawthorne Blvd, Portland, OR 97215",
     "hours": [
       {
         "dayOfWeek": "Wed",
@@ -6715,9 +6715,9 @@
         "fullDate": "2026-08-16"
       }
     ],
-    "latitude": 45.5162412,
-    "longitude": -122.5975269,
-    "geocoded_address": "Portland, OR 97215, USA",
+    "latitude": 45.5122644,
+    "longitude": -122.617475,
+    "geocoded_address": "4343 SE Hawthorne Blvd, Portland, OR 97215, USA",
     "geocoding_method": "google_api",
     "itemKey": "fc8a82af1fd4",
     "image": "/burger-week-2026/images/steely_s_sweet_cowboy.jpg",
@@ -7536,7 +7536,7 @@
     "allowDelivery": false,
     "vegSubstitute": false,
     "vegSurcharge": "",
-    "address": "525 SW M, or 97204",
+    "address": "525 SW Morrison St, Portland, OR 97204",
     "hours": [
       {
         "dayOfWeek": "Mon",
@@ -7581,10 +7581,10 @@
         "fullDate": "2026-08-16"
       }
     ],
-    "latitude": 45.516964,
-    "longitude": -122.6732897,
-    "geocoded_address": "Portland, OR 97204, USA",
-    "geocoding_method": "google_api",
+    "latitude": 45.5191261,
+    "longitude": -122.6780254,
+    "geocoded_address": "525 SW Morrison St, Portland, OR 97204, USA",
+    "geocoding_method": "manual_fix",
     "itemKey": "e0512f82722a",
     "image": "/burger-week-2026/images/urban_farmer_french_onion_smash_burger.jpg",
     "imageUrl": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTc4NDMxMzIzMjEwODYzMS1VcmJhbi1GYXJtZXIuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJpbnNpZGUiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogOTYwLCAiaGVpZ2h0IjogNjAwLCAid2l0aG91dEVubGFyZ2VtZW50IjogZmFsc2V9LCAicm90YXRlIjogbnVsbH19"

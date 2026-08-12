@@ -47,8 +47,8 @@ export default function LocationDetailsModal({ selectedLocation, onClose }: Loca
   return (
     <>
       {/* Mobile: Full screen overlay */}
-      <div 
-        className="md:hidden fixed inset-0 bg-white flex flex-col mobile-footer-padding" 
+      <div
+        className="md:hidden fixed inset-0 bg-white flex flex-col"
         style={{ top: '4rem', zIndex: 1100 }}
         role="dialog" 
         aria-modal="true"

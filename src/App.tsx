@@ -8,7 +8,11 @@ function AppContent() {
   const location = useLocation();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-  const isMainView = location.pathname === '/' || location.pathname === '/list' || location.pathname === '/burger-week-2026' || location.pathname === '/burger-week-2026/';
+  // Only the List page needs reserved bottom padding: it's a normal scrolling
+  // page and its last card would otherwise sit under the fixed mobile footer.
+  // The Map page already fills the exact viewport height itself and offsets
+  // its own floating controls (e.g. the locate button) above the footer.
+  const isListView = location.pathname === '/list';
   
   useEffect(() => {
     // Check if user has seen the welcome modal in the last 24 hours
@@ -27,9 +31,9 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-gray-50 flex flex-col">
       <Navigation />
-      <main className={`flex-1 min-h-0 relative ${isMainView ? 'mobile-footer-padding' : ''}`}>
+      <main className={`flex-1 min-h-0 relative ${isListView ? 'mobile-footer-padding' : ''}`}>
         <Routes>
           <Route path="/" element={<Map />} />
           <Route path="/list" element={<List />} />

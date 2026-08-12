@@ -30,7 +30,7 @@ export default function Navigation() {
               alt="Burger Week 2026"
               className="h-12 w-auto"
             />
-            <span className="brand-font font-bold ml-2 text-3xl text-burger-red">BURGER WEEK</span>
+            <span className="brand-font font-bold ml-2 whitespace-nowrap text-[clamp(1rem,5vw,1.875rem)] text-burger-red">BURGER WEEK</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -280,7 +280,7 @@ export default function Map() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100dvh-4rem)]">
       {/* Sidebar - Hidden on mobile */}
       <div className="hidden md:block md:w-1/3 bg-white border-r overflow-y-auto">
         {/* Search and Filters */}
