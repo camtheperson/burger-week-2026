@@ -1,0 +1,16 @@
+#!/bin/bash
+# Auto-switch Node.js version using nvm when entering this directory
+
+# Check if .nvmrc exists
+if [[ -f .nvmrc ]]; then
+    # Read the version from .nvmrc
+    NVMRC_VERSION=$(cat .nvmrc)
+    
+    # Check if nvm is available
+    if command -v nvm >/dev/null 2>&1; then
+        # Use the version specified in .nvmrc
+        nvm use
+    else
+        echo "nvm not found. Please install nvm to auto-switch Node.js versions."
+    fi
+fi
